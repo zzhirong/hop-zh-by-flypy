@@ -1,16 +1,16 @@
-local jump_target = require'hop.jump_target'
-local hop = require'hop'
-local flypy_table = require'hop-zh-by-flypy.flypy_table'
-local hint = require'hop.hint'
+local jump_target = require 'hop.jump_target'
+local hop = require 'hop'
+local flypy_table = require 'hop-zh-by-flypy.flypy_table'
+local hint = require 'hop.hint'
 
 local M = {}
 
 local function map(mode, l, f, opts)
     vim.keymap.set(mode, l,
-    function()
-        M[f](opts)
-    end,
-    {remap=true}
+        function()
+            M[f](opts)
+        end,
+        { remap = true }
     )
 end
 
@@ -45,10 +45,10 @@ local function create_commands()
     local command = vim.api.nvim_create_user_command
     command("HopFlypy1", function()
         M.hint_char1()
-        end, {})
+    end, {})
     command("HopFlypy1BC", function()
         M.hint_char1({ direction = hint.HintDirection.BEFORE_CURSOR })
-        end, {})
+    end, {})
     command("HopFlypy1AC", function()
         M.hint_char1({ direction = hint.HintDirection.AFTER_CURSOR })
     end, {})
@@ -90,63 +90,62 @@ local function create_commands()
 end
 
 function M.hint_char1(opts)
-  -- opts = override_opts(opts)
-  local opts = M.opts
+    opts = setmetatable(opts or {}, {__index = M.opts})
 
-  local ok, c = pcall(vim.fn.getchar)
-  if not ok then
-    return
-  end
+    local ok, c = pcall(vim.fn.getchar)
+    if not ok then
+        return
+    end
 
-  local generator
-  if opts.current_line_only then
-    generator = jump_target.jump_targets_for_current_line
-  else
-    generator = jump_target.jump_targets_by_scanning_lines
-  end
+    local generator
+    if opts.current_line_only then
+        generator = jump_target.jump_targets_for_current_line
+    else
+        generator = jump_target.jump_targets_by_scanning_lines
+    end
 
-  local pat = vim.fn.nr2char(c)
-  pat = flypy_table.char1[pat] or pat
-  hop.hint_with(
-    generator(jump_target.regex_by_case_searching(pat, false, opts)),
-    opts
-  )
+    local pat = vim.fn.nr2char(c)
+    pat = flypy_table.char1[pat] or pat
+    hop.hint_with(
+        generator(jump_target.regex_by_case_searching(pat, false, opts)),
+        opts
+    )
 end
 
 function M.hint_char2(opts)
-  -- opts = override_opts(opts)
-  local opts = M.opts
+    opts = setmetatable(opts or {}, {__index = M.opts})
 
-  local ok, a = pcall(vim.fn.getchar)
-  if not ok then
-    return
-  end
+    local ok, a = pcall(vim.fn.getchar)
+    if not ok then
+        return
+    end
 
-  local ok2, b = pcall(vim.fn.getchar)
-  if not ok2 then
-    return
-  end
+    local ok2, b = pcall(vim.fn.getchar)
+    if not ok2 then
+        return
+    end
 
-  local pattern = vim.fn.nr2char(a)
+    local pattern = vim.fn.nr2char(a)
 
-  -- if we have a fallback key defined in the opts, if the second character is that key, we then fallback to the same
-  -- behavior as hint_char1()
-  if opts.char2_fallback_key == nil or b ~= vim.fn.char2nr(vim.api.nvim_replace_termcodes(opts.char2_fallback_key, true, false, true)) then
-    pattern = pattern .. vim.fn.nr2char(b)
-  end
+    -- if we have a fallback key defined in the opts, if the second character is that key, we then fallback to the same
+    -- behavior as hint_char1()
+    if opts.char2_fallback_key == nil or
+        b ~= vim.fn.char2nr(vim.api.nvim_replace_termcodes(opts.char2_fallback_key, true, false, true)) then
+        pattern = pattern .. vim.fn.nr2char(b)
+    end
 
-  pattern = flypy_table.char2[pattern] or pattern
-  local generator
-  if opts.current_line_only then
-    generator = jump_target.jump_targets_for_current_line
-  else
-    generator = jump_target.jump_targets_by_scanning_lines
-  end
+    pattern = flypy_table.char2[pattern] or pattern
+    local generator
+    if opts.current_line_only then
+        generator = jump_target.jump_targets_for_current_line
+    else
+        generator = jump_target.jump_targets_by_scanning_lines
+    end
 
-  hop.hint_with(
-    generator(jump_target.regex_by_case_searching(pattern, false, opts)),
-    opts
-  )
+    hop.hint_with(
+        generator(jump_target.regex_by_case_searching(pattern, false, opts)),
+        opts
+    )
 end
 
 -- Will be called by hop.nvim
