@@ -1,7 +1,7 @@
-local jump_target = require 'hop.jump_target'
-local hop = require 'hop'
-local flypy_table = require 'hop-zh-by-flypy.flypy_table'
-local hint = require 'hop.hint'
+local jump_target = require'hop.jump_target'
+local hop = require'hop'
+local flypy_table = require'hop-zh-by-flypy.flypy_table'
+local hint = require'hop.hint'
 
 local M = {}
 
@@ -16,23 +16,23 @@ end
 
 local function create_default_mappings()
     local directions = require('hop.hint').HintDirection
-    map('', 'f', "hint_char1", {
+    map({'x', 'n', 'o'}, 'f', "hint_char1", {
         direction = directions.AFTER_CURSOR,
         current_line_only = true
     })
 
-    map('', 'F', "hint_char1", {
+    map({'x', 'n', 'o'}, 'F', "hint_char1", {
         direction = directions.BEFORE_CURSOR,
         current_line_only = true
     })
 
-    map('', 't', "hint_char1", {
+    map({'x', 'n', 'o'}, 't', "hint_char1", {
         direction = directions.AFTER_CURSOR,
         current_line_only = true,
         offset = -1,
     })
 
-    map('', 'T', "hint_char1", {
+    map({'x', 'n', 'o'}, 'T', "hint_char1", {
         direction = directions.AFTER_CURSOR,
         current_line_only = true,
         offset = 1,
