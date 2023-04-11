@@ -10,7 +10,7 @@ local function map(mode, l, f, opts)
         function()
             M[f](opts)
         end,
-        { remap = true }
+        { remap = false }
     )
 end
 
@@ -18,27 +18,27 @@ local function create_default_mappings()
     local directions = require('hop.hint').HintDirection
     map({'x', 'n', 'o'}, 'f', "hint_char1", {
         direction = directions.AFTER_CURSOR,
-        current_line_only = true
+        current_line_only = true,
     })
 
     map({'x', 'n', 'o'}, 'F', "hint_char1", {
         direction = directions.BEFORE_CURSOR,
-        current_line_only = true
+        current_line_only = true,
     })
 
     map({'x', 'n', 'o'}, 't', "hint_char1", {
         direction = directions.AFTER_CURSOR,
         current_line_only = true,
-        offset = -1,
+        hint_offset = -1,
     })
 
     map({'x', 'n', 'o'}, 'T', "hint_char1", {
-        direction = directions.AFTER_CURSOR,
+        direction = directions.BEFORE_CURSOR,
         current_line_only = true,
-        offset = 1,
+        hint_offset = 1,
     })
 
-    map('n', 's', "hint_char2", {})
+    map('n', 's', "hint_char2", {multi_windows = true})
 end
 
 local function create_commands()
@@ -92,7 +92,7 @@ end
 function M.hint_char1(opts)
     opts = setmetatable(opts or {}, {__index = M.opts})
 
-    local ok, c = pcall(vim.fn.getchar)
+    local ok, char_code = pcall(vim.fn.getchar)
     if not ok then
         return
     end
@@ -104,10 +104,16 @@ function M.hint_char1(opts)
         generator = jump_target.jump_targets_by_scanning_lines
     end
 
-    local pat = vim.fn.nr2char(c)
-    pat = flypy_table.char1[pat] or pat
+    local c = vim.fn.nr2char(char_code)
+    local pat = flypy_table.char1pattern[c]
+    local plain_text = false
+    if not pat then
+        plain_text = true
+        pat = c
+    end
+
     hop.hint_with(
-        generator(jump_target.regex_by_case_searching(pat, false, opts)),
+        generator(jump_target.regex_by_case_searching(pat, plain_text, opts)),
         opts
     )
 end
@@ -115,26 +121,38 @@ end
 function M.hint_char2(opts)
     opts = setmetatable(opts or {}, {__index = M.opts})
 
-    local ok, a = pcall(vim.fn.getchar)
+    local ok, code1 = pcall(vim.fn.getchar)
     if not ok then
         return
     end
 
-    local ok2, b = pcall(vim.fn.getchar)
+    local ok2, code2 = pcall(vim.fn.getchar)
     if not ok2 then
         return
     end
 
-    local pattern = vim.fn.nr2char(a)
+    local char1 = vim.fn.nr2char(code1)
+    local char2 = vim.fn.nr2char(code2)
+    local plain_text = false
+    local pattern
 
     -- if we have a fallback key defined in the opts, if the second character is that key, we then fallback to the same
     -- behavior as hint_char1()
     if opts.char2_fallback_key == nil or
-        b ~= vim.fn.char2nr(vim.api.nvim_replace_termcodes(opts.char2_fallback_key, true, false, true)) then
-        pattern = pattern .. vim.fn.nr2char(b)
+        char2 ~= vim.api.nvim_replace_termcodes(opts.char2_fallback_key, true, false, true) then
+        pattern = flypy_table.char2pattern[char1..char2]
+        if not pattern then
+            plain_text = true
+            pattern = char1..char2
+        end
+    else
+        pattern = flypy_table.char1pattern[char1]
+        if not pattern then
+            plain_text = true
+            pattern = char1
+        end
     end
 
-    pattern = flypy_table.char2[pattern] or pattern
     local generator
     if opts.current_line_only then
         generator = jump_target.jump_targets_for_current_line
@@ -143,7 +161,7 @@ function M.hint_char2(opts)
     end
 
     hop.hint_with(
-        generator(jump_target.regex_by_case_searching(pattern, false, opts)),
+        generator(jump_target.regex_by_case_searching(pattern, plain_text, opts)),
         opts
     )
 end
